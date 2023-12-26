@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <title>WhatsApp QR Code</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background-color: #282c34;
+            color: #61dafb;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        #terminal {
+            background-color: #1e1e1e;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px;
+            max-width: 400px;
+            overflow: auto;
+        }
+
+        #qrcode-container {
+            margin-bottom: 20px;
+        }
+
+        #loading-message,
+        #message-container {
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        #loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 5px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="terminal">
+        <div id="qrcode-container"></div>
+        <div id="loading-message">Please wait, loading QR code <span id="loading-spinner"></span></div>
+        <div id="message-container"></div>
+        <table id="read-container">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Check Time</th>
+                    <th>User Info</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        function refreshQRCode() {
+            const timestamp = new Date().toLocaleTimeString();
+    
+            fetch('http://localhost:3000/')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('qrcode-container').innerHTML = html;
+                    document.getElementById('loading-message').style.display = 'none';
+    
+                    let timestampElement = document.getElementById('timestamp');
+                    if (!timestampElement) {
+                        timestampElement = document.createElement('div');
+                        timestampElement.id = 'timestamp';
+                        document.getElementById('qrcode-container').insertAdjacentElement('afterend', timestampElement);
+                    }
+                    timestampElement.innerHTML = `Refreshed at ${timestamp}`;
+    
+                })
+                .catch(error => {
+                    console.error('Error refreshing QR code:', error);
+                    document.getElementById('loading-message').innerHTML = 'Error loading QR code';
+                });
+        }
+    
+        function formatTimestamp(timestamp) {
+            const date = new Date(timestamp * 1000);
+            return date.toLocaleTimeString();
+        }
+
+        function formatTimestamps(timestamp) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', timeZoneName: 'short' };
+            return new Date(timestamp).toLocaleString('en-US', options);
+        }
+            
+        function refreshMessage() {
+            fetch('http://localhost:3000/messages')
+                .then(response => response.json())
+                .then(data => {
+                    const formattedTimestamp = formatTimestamp(data.message.timestamp);
+                    document.getElementById('message-container').innerHTML = `<div class="received-message">${data.message.sender}: ${data.message.body} <br> ${formattedTimestamp} </div>`;
+                })
+                .catch(error => {
+                    console.error('Error loading message:', error);
+                    document.getElementById('message-container').innerHTML = 'Error loading message';
+                });
+        }
+    
+        function refreshReadData() {
+            fetch('http://localhost:3000/latest-data')
+                .then(response => response.json())
+                .then(result => {
+                    const readContainer = document.getElementById('read-container');
+                    const tbody = readContainer.querySelector('tbody');
+                    tbody.innerHTML = ''; // Clear existing rows
+
+                    if (result.data && result.data.length > 0) {
+                        result.data.forEach(item => {
+                            const formattedTimestamp = formatTimestamps(item.CHECKTIME);
+
+                            const userInfo = item.userInfo || {};
+                            const formattedUserInfo = `Name: ${userInfo.Name || 'N/A'}, OPHONE: ${userInfo.OPHONE || 'N/A'}`;
+
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${item.USERID}</td>
+                                <td>${formattedTimestamp}</td>
+                                <td>${formattedUserInfo}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        const row = document.createElement('tr');
+                        row.innerHTML = '<td colspan="3">No data available</td>';
+                        tbody.appendChild(row);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading read data:', error);
+                    document.getElementById('read-container').innerHTML = 'Error loading read data';
+                });
+        }
+
+        window.onload = () => {
+            setInterval(refreshQRCode, 3000);
+            setInterval(refreshMessage, 3000);
+            setInterval(refreshReadData, 3000);
+        };
+    </script> 
+
+</body>
+
+</html>
