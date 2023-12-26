@@ -46,7 +46,7 @@ const sendMessageIfCheckedInToday = async () => {
                     const recipientNumber = userInfoResult[0].OPHONE;
                     const statusMsg = msgInfoResult[0].statusMsg;
 
-                    if (statusMsg === 2) {
+                    if (statusMsg === 0) {
                         const message = 'Anak anda sudah absen!';
                         await client.sendMessage(`${recipientNumber}@c.us`, message);
 
