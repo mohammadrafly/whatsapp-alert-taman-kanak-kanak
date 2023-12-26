@@ -47,8 +47,10 @@ const sendMessageIfCheckedInToday = async () => {
                     const statusMsg = msgInfoResult[0].statusMsg;
 
                     if (statusMsg === 0) {
-                        const message = 'Anak anda sudah absen!';
-                        await client.sendMessage(`${recipientNumber}@c.us`, message);
+                        client.on('ready', async () => {
+                            const message = 'Anak anda sudah absen!';
+                            await client.sendMessage(`${recipientNumber}@c.us`, message);
+                        });
 
                         console.log('WhatsApp message sent to', recipientNumber);
 
