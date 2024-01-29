@@ -80,7 +80,7 @@ async function sendMessageIfCheckedInToday(latestData) {
                 const recipientNumber = userInfoResult[0].OPHONE;
                 const statusMsg = msgInfoResult[1].statusMsg;
                 if (statusMsg === 0) {
-                    const responseMessage = `${userInfoResult[0].Name} telah absen pulang pada ${formatDateTime(msgInfoResult[0].CHECKTIME)}.`;
+                    const responseMessage = `${userInfoResult[0].Name} telah absen pulang pada ${formatDateTime(msgInfoResult[1].CHECKTIME)}.`;
 
                     try {
                         await client.sendMessage(`${recipientNumber}@c.us`, responseMessage);
