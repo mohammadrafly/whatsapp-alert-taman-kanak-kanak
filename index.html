@@ -136,7 +136,7 @@
                 .then(result => {
                     const readContainer = document.getElementById('read-container');
                     const tbody = readContainer.querySelector('tbody');
-                    tbody.innerHTML = ''; // Clear existing rows
+                    tbody.innerHTML = '';
 
                     if (result.data && result.data.length > 0) {
                         result.data.forEach(item => {
