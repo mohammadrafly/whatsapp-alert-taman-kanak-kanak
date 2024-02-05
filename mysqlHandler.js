@@ -22,8 +22,8 @@ function queryDatabaseMysql(query) {
 }
 
 function insertAbsenToday(data) {
-    const { uid, statusMsg, checkType } = data;
-    const query = `INSERT INTO absen (uid, statusMsg, checkType) VALUES ('${uid}', '${statusMsg}', '${checkType}')`;
+    const { uid, statusMsg, checkType, created_at, updated_at } = data;
+    const query = `INSERT INTO absen (uid, statusMsg, checkType, created_at, updated_at) VALUES ('${uid}', '${statusMsg}', '${checkType}', '${created_at}', '${updated_at}')`;
 
     return queryDatabaseMysql(query);
 }

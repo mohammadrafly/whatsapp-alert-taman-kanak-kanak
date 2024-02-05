@@ -17,6 +17,18 @@ function formatDateTime(dateTimeString) {
     return dateTime.toLocaleString('id-ID', options);
 }
 
+const formatDate = (date) => {
+    const formattedDate = new Date(date);
+    const year = formattedDate.getFullYear();
+    const month = String(formattedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(formattedDate.getDate()).padStart(2, '0');
+    const hours = String(formattedDate.getHours()).padStart(2, '0');
+    const minutes = String(formattedDate.getMinutes()).padStart(2, '0');
+    const seconds = String(formattedDate.getSeconds()).padStart(2, '0');
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
 async function sendMessageIfCheckedInToday(latestData) {
     try {
         if (!latestData || latestData.length === 0) {
@@ -61,13 +73,16 @@ async function sendMessageIfCheckedInToday(latestData) {
                     try {
                         await client.sendMessage(`${recipientNumber}@c.us`, responseMessage);
                         console.log('WhatsApp message sent to', recipientNumber);
-
+                        
                         const newAbsen = {
                             uid: msgInfoResult[0].USERID,
                             statusMsg: 1,
                             checkType: msgInfoResult[0].CHECKTYPE,
+                            created_at: formatDate(msgInfoResult[0].CHECKTIME),
+                            updated_at: formatDate(msgInfoResult[0].CHECKTIME)
                         };
                         
+                        console.log(newAbsen);
                         await updateStatus(userId, currentDate);
                         await insertAbsenToday(newAbsen);
                     } catch (error) {
@@ -90,8 +105,11 @@ async function sendMessageIfCheckedInToday(latestData) {
                             uid: msgInfoResult[1].USERID,
                             statusMsg: 1,
                             checkType: msgInfoResult[1].CHECKTYPE,
+                            created_at: formatDate(msgInfoResult[1].CHECKTIME),
+                            updated_at: formatDate(msgInfoResult[1].CHECKTIME)
                         };
                         
+                        console.log(newAbsen);
                         await updateStatus(userId, currentDate);
                         await insertAbsenToday(newAbsen);
                     } catch (error) {
