@@ -11,16 +11,16 @@ async function setupCronJob() {
 
                 const result = await queryDatabase(`SELECT USERID, CHECKTIME, statusMsg FROM CHECKINOUT WHERE FORMAT(CHECKTIME, 'YYYY-MM-DD') >= '${currentDate}'`);
 
-                const latestData = result;
+                const latestData = result; 
 
-                if (result && result.length > 0) {
+                if (result && result.length > 0) { 
                     sendMessageIfCheckedInToday(latestData);
-                } else {
+
                     const allData = await queryDatabase(`SELECT USERID, Name, OPHONE FROM USERINFO`);
 
                     for (const user of allData) {
                         if (!await findUserInDatabase(user.USERID)) {
-                            const newUser = {
+                            const newUser = { 
                                 uid: user.USERID,
                                 name: user.Name,
                                 ophone: user.OPHONE,

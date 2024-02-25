@@ -21,6 +21,49 @@
             height: 100vh;
         }
 
+        form {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        div {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        input[type="time"] {
+            padding: 8px;
+            width: 100%;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        input[type="time"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
         #terminal {
             background-color: #1e1e1e;
             border-radius: 5px;
@@ -70,19 +113,85 @@
         <div id="qrcode-container"></div>
         <div id="loading-message">Please wait, loading QR code <span id="loading-spinner"></span></div>
         <div id="message-container"></div>
-        <table id="read-container">
-            <thead>
-                <tr>
-                    <th>User ID</th>
-                    <th>Check Time</th>
-                    <th>User Info</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <div>
+            <form id="updateForm">
+                <div>
+                    <label for="start_time_enter">Jam Mulai Aktif Absen Masuk</label>
+                    <input type="time" id="start_time_enter" name="start_time_enter" step="any">
+                </div>
+                <div>
+                    <label for="end_time_enter">Jam Mulai Berakhir Absen Masuk</label>
+                    <input type="time" id="end_time_enter" name="end_time_enter" step="any">
+                </div>
+                <div>
+                    <label for="start_time_leave">Jam Mulai Aktif Absen Pulang</label>
+                    <input type="time" id="start_time_leave" name="start_time_leave" step="any">
+                </div>
+                <div>
+                    <label for="end_time_leave">Jam Mulai Berakhir Absen Pulang</label>
+                    <input type="time" id="end_time_leave" name="end_time_leave" step="any">
+                </div>
+                <div>
+                    <label for="time_check_in">Jam Absen Masuk</label>
+                    <input type="time" id="time_check_in" name="time_check_in" step="any">
+                </div>
+                <div>
+                    <label for="time_check_out">Jam Absen Pulang</label>
+                    <input type="time" id="time_check_out" name="time_check_out" step="any">
+                </div>
+                <div>
+                    <input type="submit" value="Submit">
+                </div>
+            </form>         
+        </div>
     </div>
 
     <script>
+        function populateForm(data) {
+            document.getElementById('start_time_enter').value = data.start_time_enter;
+            document.getElementById('end_time_enter').value = data.end_time_enter;
+            document.getElementById('start_time_leave').value = data.start_time_leave;
+            document.getElementById('end_time_leave').value = data.end_time_leave;
+            document.getElementById('time_check_in').value = data.time_check_in;
+            document.getElementById('time_check_out').value = data.time_check_out;
+        }
+
+        fetch('http://localhost:3000/display-data')
+            .then(response => response.json())
+            .then(data => {
+                populateForm(data);
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+
+         document.getElementById('updateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const jsonData = {};
+            formData.forEach((value, key) => {
+                jsonData[key] = value;
+            });
+
+            fetch('http://localhost:3000/update-data', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(jsonData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to update data');
+                }
+                console.log('Data updated successfully');
+            })
+            .catch(error => {
+                console.error('Error updating data:', error);
+            });
+        });
+
         function refreshQRCode() {
             const timestamp = new Date().toLocaleTimeString();
     
@@ -129,46 +238,10 @@
                     document.getElementById('message-container').innerHTML = 'Error loading message';
                 });
         }
-    
-        function refreshReadData() {
-            fetch('http://localhost:3000/latest-data')
-                .then(response => response.json())
-                .then(result => {
-                    const readContainer = document.getElementById('read-container');
-                    const tbody = readContainer.querySelector('tbody');
-                    tbody.innerHTML = '';
-
-                    if (result.data && result.data.length > 0) {
-                        result.data.forEach(item => {
-                            const formattedTimestamp = formatTimestamps(item.CHECKTIME);
-
-                            const userInfo = item.userInfo || {};
-                            const formattedUserInfo = `Name: ${userInfo.Name || 'N/A'}, OPHONE: ${userInfo.OPHONE || 'N/A'}`;
-
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${item.USERID}</td>
-                                <td>${formattedTimestamp}</td>
-                                <td>${formattedUserInfo}</td>
-                            `;
-                            tbody.appendChild(row);
-                        });
-                    } else {
-                        const row = document.createElement('tr');
-                        row.innerHTML = '<td colspan="3">No data available</td>';
-                        tbody.appendChild(row);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading read data:', error);
-                    document.getElementById('read-container').innerHTML = 'Error loading read data';
-                });
-        }
 
         window.onload = () => {
             setInterval(refreshQRCode, 3000);
             setInterval(refreshMessage, 3000);
-            setInterval(refreshReadData, 3000);
         };
     </script> 
 

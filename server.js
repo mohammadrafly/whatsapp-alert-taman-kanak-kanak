@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { client, generateQRCode } = require('./clientHandler');
@@ -44,6 +45,45 @@ app.get('/read', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('Database Error:', error);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+app.get('/display-data', (req, res) => { 
+    try {
+        fs.readFile('data.json', 'utf8', (err, data) => {
+            if (err) {
+                console.error('Error reading file:', err);
+                res.status(500).json({ error: 'Internal Server Error' });
+                return;
+            }
+            try {
+                const jsonData = require('./data.json');
+                res.json(jsonData);
+            } catch (error) {
+                console.error('Error reading JSON file:', error);
+            }
+        });
+    } catch (error) { 
+        console.error('Error fetching data:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+app.put('/update-data', async (req, res) => {
+    try {
+        const newData = req.body; 
+        fs.writeFile('data.json', JSON.stringify(newData), (err) => {
+            if (err) {
+                console.error('Error writing file:', err);
+                res.status(500).send('Internal Server Error');
+            } else {
+                console.log('Data has been updated');
+                res.send('Data has been updated');
+            }
+        });
+    } catch (error) {
+        console.error('Error updating data:', error);
         res.status(500).send('Internal Server Error');
     }
 });
@@ -95,4 +135,4 @@ client.on('ready', () => {
 });
 
 client.initialize();
-setupCronJob();
+setupCronJob(); 

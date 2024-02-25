@@ -1,6 +1,7 @@
 const { queryDatabase , updateStatus} = require('./databaseHandler');
 const { insertAbsenToday } = require('./mysqlHandler');
 const { client } = require('./clientHandler');
+const fs = require('fs');
 
 function formatDateTime(dateTimeString) {
     const options = {
@@ -15,6 +16,16 @@ function formatDateTime(dateTimeString) {
 
     const dateTime = new Date(dateTimeString);
     return dateTime.toLocaleString('id-ID', options);
+}
+
+function readDataFromFile() {
+    try {
+        const data = fs.readFileSync('data.json', 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error reading data from file:', error);
+        return null;
+    }
 }
 
 const formatDate = (date) => {
@@ -44,12 +55,14 @@ async function sendMessageIfCheckedInToday(latestData) {
 
         const userId = filteredData[0].USERID;
         const currentDate = new Date().toISOString().split('T')[0];
+        const timeData = readDataFromFile();
+        let checkType;
 
         const checkinTodayQuery = `
             SELECT *
             FROM CHECKINOUT
             WHERE USERID = ${userId}
-            AND FORMAT(CHECKTIME, 'YYYY-MM-DD') >= '${currentDate}'
+            AND FORMAT(CHECKTIME, 'YYYY-MM-DD') >= '${currentDate}' 
         `;
 
         const checkinTodayResult = await queryDatabase(checkinTodayQuery);
@@ -60,64 +73,55 @@ async function sendMessageIfCheckedInToday(latestData) {
 
         const userInfoQuery = `SELECT OPHONE, Name FROM USERINFO WHERE USERID = ${userId}`;
 
-        const userInfoResult = await queryDatabase(userInfoQuery);
+        const userInfoResult = await queryDatabase(userInfoQuery); 
         const msgInfoResult = await queryDatabase(checkinTodayQuery);
 
         if (userInfoResult && userInfoResult.length > 0) {
-            if (msgInfoResult[0].statusMsg === 0) {
-                const recipientNumber = userInfoResult[0].OPHONE;
-                const statusMsg = msgInfoResult[0].statusMsg;
-                if (statusMsg === 0) {
-                    const responseMessage = `${userInfoResult[0].Name} telah absen masuk pada ${formatDateTime(msgInfoResult[0].CHECKTIME)}.`;
+            
+            const absenInfo = msgInfoResult.find(item => item.statusMsg === 0);
 
-                    try {
-                        await client.sendMessage(`${recipientNumber}@c.us`, responseMessage);
-                        console.log('WhatsApp message sent to', recipientNumber);
-                        
-                        const newAbsen = {
-                            uid: msgInfoResult[0].USERID,
-                            statusMsg: 1,
-                            checkType: msgInfoResult[0].CHECKTYPE,
-                            created_at: formatDate(msgInfoResult[0].CHECKTIME),
-                            updated_at: formatDate(msgInfoResult[0].CHECKTIME)
-                        };
-                        
-                        console.log(newAbsen);
-                        await updateStatus(userId, currentDate);
-                        await insertAbsenToday(newAbsen);
-                    } catch (error) {
-                        console.error('Error sending WhatsApp message:', error);
+            if (absenInfo) {
+                if (timeData && timeData.start_time_enter && timeData.end_time_enter && timeData.start_time_leave && timeData.end_time_leave && timeData.time_check_in) {
+                    const checkTime = new Date(`2022-01-01 ${absenInfo.CHECKTIME}`);
+                    const startTimeEnter = new Date(`2022-01-01 ${timeData.start_time_enter}`);
+                    const endTimeEnter = new Date(`2022-01-01 ${timeData.end_time_enter}`);
+                    const startTimeLeave = new Date(`2022-01-01 ${timeData.start_time_leave}`);
+                    const endTimeLeave = new Date(`2022-01-01 ${timeData.end_time_leave}`);
+                
+                    if (checkTime >= startTimeEnter && checkTime <= endTimeEnter) {
+                        checkType = 'I'; 
+                    } else if (checkTime >= startTimeLeave && checkTime <= endTimeLeave) {
+                        checkType = 'O';
+                    } else {
+                        console.log('Outside of check-in and check-out times');
                     }
                 } else {
-                    console.log('No need to send message. User has already received a message or statusMsg is not set.');
+                    console.log('Insufficient data in data.json');
                 }
-            } else if (msgInfoResult[1].statusMsg === 0) {
+
                 const recipientNumber = userInfoResult[0].OPHONE;
-                const statusMsg = msgInfoResult[1].statusMsg;
-                if (statusMsg === 0) {
-                    const responseMessage = `${userInfoResult[0].Name} telah absen pulang pada ${formatDateTime(msgInfoResult[1].CHECKTIME)}.`;
+                const responseMessage = `${userInfoResult[0].Name} telah absen ${checkType === 'I' ? 'masuk' : 'pulang'} pada ${formatDateTime(absenInfo.CHECKTIME)}.`;
 
-                    try {
-                        await client.sendMessage(`${recipientNumber}@c.us`, responseMessage);
-                        console.log('WhatsApp message sent to', recipientNumber);
+                try {
+                    await client.sendMessage(`${recipientNumber}@c.us`, responseMessage);
+                    console.log('WhatsApp message sent to', recipientNumber);
 
-                        const newAbsen = {
-                            uid: msgInfoResult[1].USERID,
-                            statusMsg: 1,
-                            checkType: msgInfoResult[1].CHECKTYPE,
-                            created_at: formatDate(msgInfoResult[1].CHECKTIME),
-                            updated_at: formatDate(msgInfoResult[1].CHECKTIME)
-                        };
-                        
-                        console.log(newAbsen);
-                        await updateStatus(userId, currentDate);
-                        await insertAbsenToday(newAbsen);
-                    } catch (error) {
-                        console.error('Error sending WhatsApp message:', error);
-                    }
-                } else {
-                    console.log('No need to send message. User has already received a message or statusMsg is not set.');
+                    const newAbsen = { 
+                        uid: absenInfo.USERID,
+                        statusMsg: 1,
+                        checkType: checkType,
+                        created_at: formatDate(absenInfo.CHECKTIME),
+                        updated_at: formatDate(absenInfo.CHECKTIME)
+                    };
+
+                    console.log(newAbsen);
+                    await updateStatus(userId, currentDate);
+                    await insertAbsenToday(newAbsen);
+                } catch (error) {
+                    console.error('Error sending WhatsApp message:', error);
                 }
+            } else {
+                console.log(`No absen information found for CHECKTYPE "${desiredCheckTypes.join('" or "')}" with statusMsg 0.`);
             }
         }
     } catch (error) {
