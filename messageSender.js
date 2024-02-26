@@ -81,13 +81,24 @@ async function sendMessageIfCheckedInToday(latestData) {
             const absenInfo = msgInfoResult.find(item => item.statusMsg === 0);
 
             if (absenInfo) {
+                const dateObject = new Date(absenInfo.CHECKTIME);
+
+                const hour = dateObject.getHours();
+                const minutes = dateObject.getMinutes();
+
+                const CHECKTIME = `${hour}:${minutes}`;
+
                 if (timeData && timeData.start_time_enter && timeData.end_time_enter && timeData.start_time_leave && timeData.end_time_leave && timeData.time_check_in) {
-                    const checkTime = new Date(`2022-01-01 ${absenInfo.CHECKTIME}`);
-                    const startTimeEnter = new Date(`2022-01-01 ${timeData.start_time_enter}`);
-                    const endTimeEnter = new Date(`2022-01-01 ${timeData.end_time_enter}`);
-                    const startTimeLeave = new Date(`2022-01-01 ${timeData.start_time_leave}`);
-                    const endTimeLeave = new Date(`2022-01-01 ${timeData.end_time_leave}`);
-                
+                    const checkTime = CHECKTIME
+                    const startTimeEnter = timeData.start_time_enter
+                    const endTimeEnter = timeData.end_time_enter
+                    const startTimeLeave = timeData.start_time_leave
+                    const endTimeLeave = timeData.end_time_leave
+                    
+                    console.log({
+                        'absen': checkTime,
+                        'start': startTimeEnter
+                    })
                     if (checkTime >= startTimeEnter && checkTime <= endTimeEnter) {
                         checkType = 'I'; 
                     } else if (checkTime >= startTimeLeave && checkTime <= endTimeLeave) {
@@ -99,6 +110,7 @@ async function sendMessageIfCheckedInToday(latestData) {
                     console.log('Insufficient data in data.json');
                 }
 
+                console.log(checkType)
                 const recipientNumber = userInfoResult[0].OPHONE;
                 const responseMessage = `${userInfoResult[0].Name} telah absen ${checkType === 'I' ? 'masuk' : 'pulang'} pada ${formatDateTime(absenInfo.CHECKTIME)}.`;
 
