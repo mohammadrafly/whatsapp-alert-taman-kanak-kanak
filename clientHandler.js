@@ -4,10 +4,10 @@ const qrcode = require('qrcode-terminal');
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        args: ['--no-sandbox'],
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
     }
 });
-
+ 
 async function generateQRCode(data) {
     return new Promise((resolve, reject) => {
         qrcode.generate(data, { small: true }, (qrcode) => {
