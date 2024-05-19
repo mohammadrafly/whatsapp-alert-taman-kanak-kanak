@@ -9,8 +9,11 @@ const client = new Client({
         type: 'remote',
         remotePath: `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${wwebVersion}.html`,
     },
+    puppeteer: {
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    }
 });
-
+ 
 async function generateQRCode(data) {
     return new Promise((resolve, reject) => {
         qrcode.generate(data, { small: true }, (qrcode) => {

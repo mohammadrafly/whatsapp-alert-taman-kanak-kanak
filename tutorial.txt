@@ -1,0 +1,40 @@
+{
+    //jam absen masuk (start/mulai = 13:00, end/berakhir = 13:30)
+    "start_time_enter":"13:00", //mulai jam absen masuk
+    "end_time_enter":"13:30", //batas akhir jam absen masuk
+
+    //jam absen pulang (start/mulai = 14:00, end/berakhir = 16:00)
+    "start_time_leave":"14:00", //mulai jam absen pulang
+    "end_time_leave":"16:00", //batas akhir jam absen pulang
+
+    "time_check_in":"13:30",
+    "time_check_out":"22:30"
+}
+
+skenario sidang jam 11
+
+mode testing absen masuk
+{
+    "start_time_enter":"11:00", //mulai jam absen masuk
+    "end_time_enter":"12:00", //batas akhir jam absen masuk
+    "start_time_leave":"13:00", //jangan sampai sama dengan absen masuk
+    "end_time_leave":"14:00", //harus di atasnya start_time_leave
+    "time_check_in":"11:00", //ganti sesuai start_time_leave
+    "time_check_out":"14:00" //ganti sesuait end_time_leave
+}
+
+mode testing absen pulang
+{
+    "start_time_enter":"06:00", //mulai jam absen masuk
+    "end_time_enter":"07:00", //batas akhir jam absen masuk
+    "start_time_leave":"11:00", //jangan sampai sama dengan absen masuk
+    "end_time_leave":"12:00", //harus di atasnya start_time_leave
+    "time_check_in":"06:00", //ganti sesuai start_time_leave
+    "time_check_out":"07:00" //ganti sesuait end_time_leave
+}
+
+cara save
+
+-jika di tab ada lingkaran warna putih maka bisa melakukan save
+-ctrl+c 
+-jika di tab sudah tidak ada lingkarang warna putih maka sudah tersave 
