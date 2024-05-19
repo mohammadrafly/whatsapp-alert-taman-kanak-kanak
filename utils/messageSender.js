@@ -1,5 +1,5 @@
 const { queryDatabase , updateStatus} = require('./databaseHandler');
-const { insertAbsenToday } = require('./mysqlHandler');
+const { insertAbsenToday } = require('../mysqlHandler');
 const { client } = require('./clientHandler');
 const fs = require('fs');
 

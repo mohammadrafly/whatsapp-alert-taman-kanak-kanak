@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const { queryDatabase } = require('./databaseHandler');
-const { insertUserIntoDatabase, findUserInDatabase } = require('./mysqlHandler');
+const { insertUserIntoDatabase, findUserInDatabase } = require('../mysqlHandler');
 const { sendMessageIfCheckedInToday } = require('./messageSender');
 
 async function setupCronJob() {

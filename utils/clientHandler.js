@@ -1,5 +1,4 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
 const wwebVersion = '2.2412.54';
 
 const client = new Client({
@@ -13,15 +12,5 @@ const client = new Client({
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
     }
 });
- 
-async function generateQRCode(data) {
-    return new Promise((resolve, reject) => {
-        qrcode.generate(data, { small: true }, (qrcode) => {
-            resolve(qrcode);
-        }, (error) => {
-            reject(error);
-        });
-    });
-}
 
-module.exports = { client, generateQRCode };
+module.exports = { client };
