@@ -1,6 +1,6 @@
 const { client } = require('./utils/clientHandler');
 const qrcode = require('qrcode-terminal');
-const { setupCronJob } = require('./cronJob');
+const { setupCronJob } = require('./utils/cronJob');
 
 client.on('ready', () => {
     console.log('Client is ready!');

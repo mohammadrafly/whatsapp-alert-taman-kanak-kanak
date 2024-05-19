@@ -1,3 +1,5 @@
+'use strict';
+
 const ADODB = require('node-adodb');
 
 const connection = ADODB.open('Provider=Microsoft.Jet.OLEDB.4.0;Data Source=C:\\Program Files (x86)\\Att\\att2000.mdb;');
