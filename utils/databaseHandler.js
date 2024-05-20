@@ -10,7 +10,7 @@ async function queryDatabase(query) {
 
 async function updateStatus(userId, currentDate) {
     try {
-        const updateStatusQuery = `UPDATE CHECKINOUT SET statusMsg = 1 WHERE USERID = ${userId} AND FORMAT(CHECKTIME, 'YYYY-MM-DD') >= '${currentDate}'`;
+        const updateStatusQuery = `UPDATE CHECKINOUT SET statusMsg = 1 WHERE USERID = ${userId} AND FORMAT(CHECKTIME, 'YYYY-MM-DD') = '${currentDate}'`;
         await queryDatabase(updateStatusQuery);
     } catch (error) {
         console.error('Error:', error);

@@ -4,42 +4,39 @@ const { insertUserIntoDatabase, findUserInDatabase } = require('./mysqlHandler')
 const { sendMessageIfCheckedInToday } = require('./messageSender');
 
 async function setupCronJob() {
+    console.log('Starting cron job:');
     try {
         cron.schedule('*/5 * * * * *', async () => {
+            console.log('Cron job running...'); // Add this line for logging
             try {
                 const currentDate = new Date().toISOString().split('T')[0];
+                console.log('Current Date:', currentDate); // Add this line for logging
+                const [checkInOutResult, userInfoResult] = await Promise.all([
+                    queryDatabase(`SELECT USERID, CHECKTIME, statusMsg FROM CHECKINOUT WHERE FORMAT(CHECKTIME, 'YYYY-MM-DD') = '${currentDate}'`),
+                    queryDatabase(`SELECT USERID, Name, OPHONE FROM USERINFO`)
+                ]);
+                //console.log('CheckInOut Result:', checkInOutResult); // Add this line for logging
+                //console.log('UserInfo Result:', userInfoResult); // Add this line for logging
 
-                const result = await queryDatabase(`SELECT USERID, CHECKTIME, statusMsg FROM CHECKINOUT WHERE FORMAT(CHECKTIME, 'YYYY-MM-DD') >= '${currentDate}'`);
-
-                const latestData = result; 
-
-                if (result && result.length > 0) { 
-                    sendMessageIfCheckedInToday(latestData);
-
-                    const allData = await queryDatabase(`SELECT USERID, Name, OPHONE FROM USERINFO`);
-
-                    for (const user of allData) {
-                        if (!await findUserInDatabase(user.USERID)) {
-                            const newUser = { 
+                if (checkInOutResult.length > 0) {
+                    sendMessageIfCheckedInToday(checkInOutResult);
+                    await Promise.all(userInfoResult.map(async (user) => {
+                        if (!(await findUserInDatabase(user.USERID))) {
+                            const newUser = {
                                 uid: user.USERID,
                                 name: user.Name,
                                 ophone: user.OPHONE,
                             };
-
-                            try {
-                                await insertUserIntoDatabase(newUser);
-                            } catch (error) {
-                                console.error(`Error processing user with UID ${newUser.uid}:`, error);
-                            }
+                            await insertUserIntoDatabase(newUser);
                         }
-                    }
+                    }));
                 }
             } catch (error) {
-                console.error('Kesalahan Database:', error);
+                console.error('Database Error:', error);
             }
         });
     } catch (error) {
-        console.error('Kesalahan dalam menyiapkan pekerjaan cron:', error);
+        console.error('Error setting up cron job:', error);
     }
 }
 

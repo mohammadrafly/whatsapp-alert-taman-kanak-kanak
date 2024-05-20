@@ -4,7 +4,7 @@ const dbConfig = {
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'system_management_absensi',
+    database: 'management_absensi',
 };
 
 const pool = mysql.createPool(dbConfig);
@@ -47,5 +47,16 @@ async function findUserInDatabase(uid) {
     }
 }
 
+async function getTime() {
+    const query = `SELECT * FROM time WHERE id = 1`;
 
-module.exports = { queryDatabaseMysql, insertUserIntoDatabase, findUserInDatabase, insertAbsenToday };
+    const results = await queryDatabaseMysql(query);
+  
+    if (results.length > 0) {
+        return results[0];
+    } else {
+        return null;
+    }
+}
+
+module.exports = { queryDatabaseMysql, insertUserIntoDatabase, findUserInDatabase, insertAbsenToday, getTime };

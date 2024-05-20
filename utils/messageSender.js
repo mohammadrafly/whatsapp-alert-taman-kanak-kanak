@@ -1,7 +1,6 @@
-const { queryDatabase , updateStatus} = require('./databaseHandler');
-const { insertAbsenToday } = require('./mysqlHandler');
+const { queryDatabase, updateStatus } = require('./databaseHandler');
+const { insertAbsenToday, getTime } = require('./mysqlHandler');
 const { client } = require('./clientHandler');
-const fs = require('fs');
 
 function formatDateTime(dateTimeString) {
     const options = {
@@ -16,16 +15,6 @@ function formatDateTime(dateTimeString) {
 
     const dateTime = new Date(dateTimeString);
     return dateTime.toLocaleString('id-ID', options);
-}
-
-function readDataFromFile() {
-    try {
-        const data = fs.readFileSync('data.json', 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Error reading data from file:', error);
-        return null;
-    }
 }
 
 const formatDate = (date) => {
@@ -55,7 +44,7 @@ async function sendMessageIfCheckedInToday(latestData) {
 
         const userId = filteredData[0].USERID;
         const currentDate = new Date().toISOString().split('T')[0];
-        const timeData = readDataFromFile();
+        const timeData = await getTime();
         let checkType;
 
         const checkinTodayQuery = `
@@ -73,44 +62,48 @@ async function sendMessageIfCheckedInToday(latestData) {
 
         const userInfoQuery = `SELECT OPHONE, Name FROM USERINFO WHERE USERID = ${userId}`;
 
-        const userInfoResult = await queryDatabase(userInfoQuery); 
+        const userInfoResult = await queryDatabase(userInfoQuery);
         const msgInfoResult = await queryDatabase(checkinTodayQuery);
 
         if (userInfoResult && userInfoResult.length > 0) {
-            
+
             const absenInfo = msgInfoResult.find(item => item.statusMsg === 0);
 
             if (absenInfo) {
-                const dateObject = new Date(absenInfo.CHECKTIME);
+                const DateTime = new Date(absenInfo.CHECKTIME);
 
-                const hour = dateObject.getHours();
-                const minutes = dateObject.getMinutes();
+                console.log(absenInfo.CHECKTIME)
+                const hour = DateTime.getHours().toString().padStart(2, '0');
+                const minute = DateTime.getMinutes().toString().padStart(2, '0');
 
-                const CHECKTIME = `${hour}:${minutes}`;
-
-                if (timeData && timeData.start_time_enter && timeData.end_time_enter && timeData.start_time_leave && timeData.end_time_leave && timeData.time_check_in) {
+                const CHECKTIME = `${hour}:${minute}`
+                if (timeData && timeData.start_time_enter && timeData.end_time_enter && timeData.start_time_leave && timeData.end_time_leave) {
                     const checkTime = CHECKTIME
                     const startTimeEnter = timeData.start_time_enter
                     const endTimeEnter = timeData.end_time_enter
                     const startTimeLeave = timeData.start_time_leave
                     const endTimeLeave = timeData.end_time_leave
-                    
+
                     console.log({
                         'absen': checkTime,
-                        'start': startTimeEnter
-                    })
+                        'start_enter': startTimeEnter,
+                        'end_enter': endTimeEnter,
+                        'start_leave': startTimeLeave,
+                        'end_leave': endTimeLeave
+                    });
+
                     if (checkTime >= startTimeEnter && checkTime <= endTimeEnter) {
                         checkType = 'I'; 
                     } else if (checkTime >= startTimeLeave && checkTime <= endTimeLeave) {
-                        checkType = 'O';
-                    } else {
-                        console.log('Outside of check-in and check-out times');
+                        checkType = 'O'; 
                     }
+
+                    console.log('Check Type:', checkType);
                 } else {
-                    console.log('Insufficient data in data.json');
+                    console.log('Insufficient data in the database');
                 }
 
-                console.log(checkType)
+                console.log(checkType);
                 const recipientNumber = userInfoResult[0].OPHONE;
                 const responseMessage = `${userInfoResult[0].Name} telah absen ${checkType === 'I' ? 'masuk' : 'pulang'} pada ${formatDateTime(absenInfo.CHECKTIME)}.`;
 
@@ -118,7 +111,7 @@ async function sendMessageIfCheckedInToday(latestData) {
                     await client.sendMessage(`${recipientNumber}@c.us`, responseMessage);
                     console.log('WhatsApp message sent to', recipientNumber);
 
-                    const newAbsen = { 
+                    const newAbsen = {
                         uid: absenInfo.USERID,
                         statusMsg: 1,
                         checkType: checkType,
@@ -133,7 +126,7 @@ async function sendMessageIfCheckedInToday(latestData) {
                     console.error('Error sending WhatsApp message:', error);
                 }
             } else {
-                console.log(`No absen information found for CHECKTYPE "${desiredCheckTypes.join('" or "')}" with statusMsg 0.`);
+                console.log('No absen information found for CHECKTYPE with statusMsg 0.');
             }
         }
     } catch (error) {
